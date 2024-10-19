@@ -3,19 +3,63 @@
 #include <cstdlib>
 #include <ctime>
 #include <cmath>
+
 using namespace std;
 
 class Node
 {
 public:
-    char value; 
+    char value; // '.' for empty, 'P' for player, 'K' for key, 'D' for door, 'B' for bomb
     bool key;
     bool coin;
     bool door;
     bool bomb;
     Node *up, *down, *left, *right;
+    int row, col;
 
-    Node(char val) : value(val), up(NULL), down(NULL), left(NULL), right(NULL), door(false), key(false),bomb(false) {}
+    Node(char val, int r, int c) : value(val), up(NULL), down(NULL), left(NULL), right(NULL), door(false), key(false), bomb(false), coin(false), row(r), col(c) {}
+};
+
+class CoinNode
+{
+public:
+    int row, col;
+    CoinNode *next;
+
+    CoinNode(int r, int c) : row(r), col(c), next(NULL) {}
+};
+
+class Inventory
+{
+public:
+    CoinNode *coinHead;
+    int score;
+
+    Inventory() : coinHead(NULL), score(0) {}
+
+    void addCoin(int row, int col)
+    {
+        CoinNode *newCoin = new CoinNode(row, col);
+        newCoin->next = coinHead;
+        coinHead = newCoin;
+        score += 2; // Each coin adds 2 points
+    }
+
+    void displayCollectedCoins()
+    {
+        mvprintw(2, 0, "Collected Coins (in order): ");
+        CoinNode *temp = coinHead;
+        while (temp != NULL)
+        {
+            printw("(%d, %d) ", temp->row, temp->col);
+            temp = temp->next;
+        }
+    }
+
+    int calculateFinalScore(int remainingMoves)
+    {
+        return score + remainingMoves; // Total score calculation
+    }
 };
 
 class Grid
