@@ -1,18 +1,22 @@
 #include <iostream>
-#include <ncurses.h>
-
+#include "curses.h"
+#include <cstdlib>
+#include <ctime>
+#include <cmath>
 using namespace std;
-
 
 class Node
 {
 public:
     char value; 
+    bool key;
+    bool coin;
+    bool door;
+    bool bomb;
     Node *up, *down, *left, *right;
 
-    Node(char val) : value(val), up(NULL), down(NULL), left(NULL), right(NULL) {}
+    Node(char val) : value(val), up(NULL), down(NULL), left(NULL), right(NULL), door(false), key(false),bomb(false) {}
 };
-
 
 class Grid
 {
@@ -24,7 +28,6 @@ public:
         head = createGrid(size);
     }
 
-    
     Node *createGrid(int size)
     {
         Node *start = NULL;
@@ -45,12 +48,10 @@ public:
                 }
                 else
                 {
-                    
                     prev->right = temp;
                     temp->left = prev;
                 }
 
-                
                 if (prevRowStart != NULL)
                 {
                     prevRowStart->down = temp;
@@ -73,47 +74,53 @@ public:
         return start;
     }
 
+void displayGrid(int size)
+{
+    Node *rowPtr = head;
+    Node *colPtr;
+
+    clear();                                     
+    mvprintw(0, 0, "Grid: %d x %d", size, size); 
+
+    int row = 2; 
     
-    void displayGrid(int size)
+    // Top boundary
+    mvprintw(row - 1, 0, "# ");
+    for (int i = 0; i < size; i++)
     {
-        Node *rowPtr = head;
-        Node *colPtr;
-
-        clear();                                     
-        mvprintw(0, 0, "Grid: %d x %d", size, size); 
-
-        int row = 2; 
-        
-        mvprintw(row - 1, 0, "#");
-        for (int i = 0; i < size; i++)
-        {
-            printw("#");
-        }
-        printw("#");
-
-        while (rowPtr != NULL)
-        {
-            colPtr = rowPtr;
-            int col = 1;              
-            mvprintw(row++, 0, "# "); 
-            while (colPtr != NULL)
-            {
-                mvprintw(row - 1, col++, "%c", colPtr->value); 
-                colPtr = colPtr->right;
-            }
-            mvprintw(row - 1, col++, " #"); 
-            rowPtr = rowPtr->down;
-        }
-
-        
-        mvprintw(row, 0, "#");
-        for (int i = 0; i < size; i++)
-        {
-            printw("#");
-        }
-        printw("#");
-        refresh(); 
+        printw("# "); 
     }
+    printw("#");
+
+    
+    while (rowPtr != NULL)
+    {
+        colPtr = rowPtr;
+        float col = 1;
+        
+        mvprintw(row++, 0, "# "); 
+        while (colPtr != NULL)
+        {
+            mvprintw(row - 1, col, " %c ", colPtr->value); // Space between cells
+            col += 2.14; // spacing
+            colPtr = colPtr->right;
+        }
+        mvprintw(row - 1, col, "#"); // Right boundary
+        rowPtr = rowPtr->down;
+    }
+
+    // Bottom boundary
+    mvprintw(row, 0, "# ");
+    for (int i = 0; i < size; i++)
+    {
+        printw("# "); 
+    }
+    printw("#");
+
+    refresh(); 
+}
+
+
 };
 
 int main()
@@ -123,16 +130,16 @@ int main()
     cbreak();    
     curs_set(0); 
 
+
     int mode = 0;
     int gridSize = 0;
 
-    
     mvprintw(0, 0, "Select Difficulty Level:\n1. Easy (10x10)\n2. Medium (15x15)\n3. Hard (20x20)\nEnter your choice: ");
     refresh(); 
 
+    // Use scanw to capture numeric input for the mode
     scanw("%d", &mode); 
 
-    
     clear();
 
     switch (mode)
@@ -163,4 +170,3 @@ int main()
 
     return 0;
 }
-
