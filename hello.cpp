@@ -62,6 +62,39 @@ public:
     }
 };
 
+class Stack
+{
+public:
+    Node *data[100];
+    int top;
+
+    Stack() : top(-1) {}
+
+    void push(Node *node)
+    {
+        if (top < 99)
+        {
+            data[++top] = node;
+        }
+    }
+
+    Node *pop()
+    {
+        return (top >= 0) ? data[top--] : NULL;
+    }
+
+    Node *peek()
+    {
+        return (top >= 0) ? data[top] : NULL;
+    }
+
+    bool isEmpty()
+    {
+        return top == -1;
+    }
+};
+
+
 class Grid
 {
 public:
