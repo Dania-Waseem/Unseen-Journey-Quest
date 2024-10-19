@@ -490,3 +490,4 @@ int main()
     endwin(); // End curses mode
     return 0;
 }
+//undo features
