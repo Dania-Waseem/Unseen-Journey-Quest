@@ -36,6 +36,7 @@ public:
 class Inventory
 {
 public:
+
     CoinNode *coinHead;
     int score;
     bool hasKey;
@@ -49,6 +50,7 @@ public:
         coinHead = newCoin;
         score += 2;
     }
+
     void displayCollectedCoins()
     {
         mvprintw(2, 0, "Collected Coins (in order): ");
@@ -72,6 +74,7 @@ public:
 class Stack
 {
 public:
+
     Node *data[100];
     int top;
 
@@ -118,6 +121,7 @@ public:
 class Grid
 {
 public:
+
     Node *head;
     Node *playerPos;
     Node *keyPos;
@@ -290,7 +294,7 @@ public:
                 {
                     // prevent moving onto the door if the player doesn't have the key
                     mvprintw(6, 0, "You need a key to pass through the door.");
-                    return; 
+                    return;
                 }
             }
 
@@ -329,6 +333,7 @@ public:
             refresh();
         }
     }
+
     void gameOver(const char *message)
     {
         clear();
@@ -391,22 +396,49 @@ public:
                                                       : "Hard",
                  remainingMoves, remainingUndos, (inventory.hasKey ? "Obtained" : "Not Obtained"));
 
-        // updataing the hint
-        int currentDistance = manhattanDistance(playerPos, keyPos);
-        static int previousDistance = manhattanDistance(playerPos, keyPos);
-        if (currentDistance < previousDistance)
+        
+        int currentDistance, previousDistance;
+
+        if (!inventory.hasKey) // Hint for key if key is not obtained
         {
-            mvprintw(4, 0, "Hint: Getting Closer to the key!");
+            currentDistance = manhattanDistance(playerPos, keyPos);
+            static int previousKeyDistance = manhattanDistance(playerPos, keyPos);
+
+            if (currentDistance < previousKeyDistance)
+            {
+                mvprintw(4, 0, "Hint: Getting closer to the key!");
+            }
+            else if (currentDistance > previousKeyDistance)
+            {
+                mvprintw(4, 0, "Hint: You are getting further away from the key.");
+            }
+            else
+            {
+                mvprintw(4, 0, "Hint: You are at the same distance from the key.");
+            }
+
+            previousKeyDistance = currentDistance;
         }
-        else if (currentDistance > previousDistance)
+        else // Hint for door after key is obtained
         {
-            mvprintw(4, 0, "Hint: You are getting further away from the key.");
+            currentDistance = manhattanDistance(playerPos, doorPos);
+            static int previousDoorDistance = manhattanDistance(playerPos, doorPos);
+
+            if (currentDistance < previousDoorDistance)
+            {
+                mvprintw(4, 0, "Hint: Getting closer to the door!");
+            }
+            else if (currentDistance > previousDoorDistance)
+            {
+                mvprintw(4, 0, "Hint: You are getting further away from the door.");
+            }
+            else
+            {
+                mvprintw(4, 0, "Hint: You are at the same distance from the door.");
+            }
+
+            previousDoorDistance = currentDistance;
         }
-        else
-        {
-            mvprintw(4, 0, "Hint: You are at the same distance from the key.");
-        }
-        previousDistance = currentDistance;
 
         int row = 6;
 
@@ -462,7 +494,9 @@ int main()
     //  scanw to capture numeric input for the mode
     scanw("%d", &difficulty);
 
-    int size, extraMoves, undos;
+    int size;
+    int extraMoves;
+    int undos;
 
     switch (difficulty)
     {
