@@ -26,19 +26,21 @@ A 2D maze game which is made using **multidimentional linked lists**. The player
 **Hints**: Receive hints based on your proximity to the key, helping you strategize your movements.
 **Scoring System**: Your final score is calculated based on collected coins, the key, and remaining moves.
 
-### Game Mechanics
+## Game Mechanics
 
-**Game Start**
-
+### Game Start
 After running the game u will see the following screen: 
 Select your desired level by pressing, 1, 2 or 3 and then press Enter.
 ![1](https://github.com/user-attachments/assets/efdf2ecf-3f05-4450-9426-4abe9733ddab)
 
-
-**During Gameplay**
+### During Gameplay
 ![2](https://github.com/user-attachments/assets/10b77aa8-ee47-44f0-8516-bc44b8478304)
 
-
-**Game Over**
+### Game Over
 ![3](https://github.com/user-attachments/assets/ea1e3494-fadb-44a8-bfbf-16bfd712dbaa)
 ![image](https://github.com/user-attachments/assets/29221cec-ab64-4dcf-8e7c-da28206a8874)
+
+## Built With
+C++
+PdCurses
+
