@@ -4,9 +4,7 @@
 #include <ctime>
 #include <cmath>
 
-
 using namespace std;
-
 
 class Node
 {
@@ -19,10 +17,8 @@ public:
     Node *up, *down, *left, *right;
     int row, col;
 
-
     Node(char val, int r, int c) : value(val), up(NULL), down(NULL), left(NULL), right(NULL), door(false), key(false), bomb(false), coin(false), row(r), col(c) {}
 };
-
 
 class CoinNode
 {
@@ -30,10 +26,8 @@ public:
     int row, col;
     CoinNode *next;
 
-
     CoinNode(int r, int c) : row(r), col(c), next(NULL) {}
 };
-
 
 class Inventory
 {
@@ -41,9 +35,7 @@ public:
     CoinNode *coinHead;
     int score;
 
-
     Inventory() : coinHead(NULL), score(0) {}
-
 
     void addCoin(int row, int col)
     {
@@ -52,7 +44,6 @@ public:
         coinHead = newCoin;
         score += 2; // Each coin adds 2 points
     }
-
 
     void displayCollectedCoins()
     {
@@ -65,13 +56,11 @@ public:
         }
     }
 
-
     int calculateFinalScore(int remainingMoves)
     {
         return score + remainingMoves; // Total score calculation
     }
 };
-
 
 class Stack
 {
@@ -79,9 +68,7 @@ public:
     Node *data[100];
     int top;
 
-
     Stack() : top(-1) {}
-
 
     void push(Node *node)
     {
@@ -91,25 +78,21 @@ public:
         }
     }
 
-
     Node *pop()
     {
         return (top >= 0) ? data[top--] : NULL;
     }
-
 
     Node *peek()
     {
         return (top >= 0) ? data[top] : NULL;
     }
 
-
     bool isEmpty()
     {
         return top == -1;
     }
 };
-
 
 class Grid
 {
@@ -122,21 +105,19 @@ public:
     Inventory inventory;
     int remainingMoves, remainingUndos;
 
-
     Grid(int size, int extraMoves, int undos)
     {
-               head = createGrid(size);
+        head = createGrid(size);
         placeObjects(size);
 
         // Calculate the number of moves based on Manhattan distance
         int movesToKey = manhattanDistance(playerPos, keyPos);
         int movesToDoor = manhattanDistance(keyPos, doorPos);
-        
+
         // The remaining moves are now based on the distances plus extra moves
         remainingMoves = movesToKey + movesToDoor + extraMoves;
-        remainingUndos = undos;     // Undo count
+        remainingUndos = undos; // Undo count
     }
-
 
     Node *createGrid(int size)
     {
@@ -144,12 +125,10 @@ public:
         Node *prevRowStart = NULL;
         Node *prev = NULL;
 
-
         for (int i = 0; i < size; i++)
         {
             Node *rowStart = NULL;
             Node *temp = NULL;
-
 
             for (int j = 0; j < size; j++)
             {
@@ -164,7 +143,6 @@ public:
                     temp->left = prev;
                 }
 
-
                 if (prevRowStart != NULL)
                 {
                     prevRowStart->down = temp;
@@ -172,14 +150,11 @@ public:
                     prevRowStart = prevRowStart->right;
                 }
 
-
                 prev = temp;
             }
 
-
             prevRowStart = rowStart;
             prev = NULL;
-
 
             if (start == NULL)
             {
@@ -187,38 +162,31 @@ public:
             }
         }
 
-
         return start;
     }
-
 
     void placeObjects(int size)
     {
         srand(time(0));
 
-
         // Place Player ('P')
         playerPos = getRandomNode(size);
         playerPos->value = 'P';
-
 
         // Place Key ('K')
         keyPos = getRandomNode(size);
         keyPos->key = true;
         keyPos->value = 'K';
 
-
         // Place Door ('D')
         doorPos = getRandomNode(size);
         doorPos->door = true;
         doorPos->value = 'D';
 
-
         // Place Bomb ('B')
         Node *bombPos = getRandomNode(size);
         bombPos->bomb = true;
         bombPos->value = 'B';
-
 
         // Place Coins randomly
         for (int i = 0; i < 5; i++) // Example: Place 5 coins
@@ -231,7 +199,6 @@ public:
             }
         }
     }
-
 
     Node *getRandomNode(int size)
     {
@@ -249,12 +216,10 @@ public:
         return node;
     }
 
-
     int manhattanDistance(Node *a, Node *b)
     {
         return abs(a->row - b->row) + abs(a->col - b->col);
     }
-
 
     void movePlayer(char direction)
     {
@@ -263,7 +228,6 @@ public:
             gameOver("No moves left! Game over.");
             return;
         }
-
 
         Node *newPos = NULL;
         switch (direction)
@@ -284,7 +248,6 @@ public:
             return;
         }
 
-
         if (newPos != NULL)
         {
             // Check for bomb
@@ -294,7 +257,6 @@ public:
                 return;
             }
 
-
             // Check for door
             if (newPos->door && inventory.score > 0)
             {
@@ -302,16 +264,21 @@ public:
                 return;
             }
 
+            // Auto undo if revisiting the same position
+            if (!moveHistory.isEmpty() && moveHistory.peek() == newPos)
+            {
+                // If revisiting the previous position, treat it as an undo
+                undoMove();
+                return;
+            }
 
             // Push current position to history before moving
             moveHistory.push(playerPos);
-
 
             // Move player to new position
             playerPos->value = '.';
             playerPos = newPos;
             playerPos->value = 'P';
-
 
             // Check for coins
             if (playerPos->coin)
@@ -320,12 +287,10 @@ public:
                 playerPos->coin = false; // Remove coin after collecting
             }
 
-
             // Update remaining moves
             remainingMoves--;
             mvprintw(0, 0, "Moves left: %d  Undos left: %d", remainingMoves, remainingUndos);
             refresh();
-
 
             // Provide hints based on distances
             int currentDistance = manhattanDistance(playerPos, keyPos);
@@ -340,14 +305,12 @@ public:
         }
     }
 
-
     void gameOver(const char *message)
     {
         mvprintw(0, 0, "%s", message);
         endwin(); // End ncurses mode
         exit(0);
     }
-
 
     void undoMove()
     {
@@ -359,16 +322,18 @@ public:
             playerPos->value = 'P';  // Set player in the previous position
             remainingUndos--;
             mvprintw(0, 0, "Moves left: %d  Undos left: %d", remainingMoves, remainingUndos);
+            if (remainingUndos == 0)
+            {
+                mvprintw(7, 0, "You used all your undo features.");
+            }
             refresh();
         }
     }
-
 
     void displayGrid(int size)
     {
         Node *rowPtr = head;
         Node *colPtr;
-
 
         clear();
         mvprintw(0, 0, "Grid: %d x %d", size, size);
@@ -377,13 +342,10 @@ public:
                                                       : "Hard",
                  remainingMoves, remainingUndos, (inventory.coinHead ? "Obtained" : "Not Obtained"));
 
-
         mvprintw(3, 0, "Controls: Use 'W' (up), 'A' (left), 'S' (down), 'D' (right) | 'U' to undo | 'Q' to quit");
         mvprintw(4, 0, "Hints: Use your sensing ability to find the key!");
 
-
         int row = 6; // Start displaying the grid from this row
-
 
         // Top boundary
         mvprintw(row - 1, 0, "# ");
@@ -393,12 +355,10 @@ public:
         }
         printw("#");
 
-
         while (rowPtr != NULL)
         {
             colPtr = rowPtr;
             float col = 1;
-
 
             mvprintw(row++, 0, "# ");
             while (colPtr != NULL)
@@ -411,7 +371,6 @@ public:
             rowPtr = rowPtr->down;
         }
 
-
         // Bottom boundary
         mvprintw(row, 0, "# ");
         for (int i = 0; i < size; i++)
@@ -420,11 +379,9 @@ public:
         }
         printw("#");
 
-
         refresh();
     }
 };
-
 
 int main()
 {
@@ -433,18 +390,14 @@ int main()
     cbreak();             // Enable line buffering
     keypad(stdscr, TRUE); // Enable special keys
 
-
     int difficulty;
     mvprintw(0, 0, "Select Difficulty Level:\n1. Easy (10x10)\n2. Medium (15x15)\n3. Hard (20x20)\nEnter your choice: ");
     refresh();
 
-
     // Use scanw to capture numeric input for the mode
     scanw("%d", &difficulty);
 
-
     int size, extraMoves, undos;
-
 
     switch (difficulty)
     {
@@ -469,10 +422,8 @@ int main()
         undos = 6;
     }
 
-
     Grid gameGrid(size, extraMoves, undos);
     gameGrid.displayGrid(size);
-
 
     char input;
     while (true)
@@ -492,8 +443,7 @@ int main()
         gameGrid.inventory.displayCollectedCoins(); // Display collected coins
     }
 
-
     endwin(); // End curses mode
     return 0;
 }
-//undo features
+// undo features
