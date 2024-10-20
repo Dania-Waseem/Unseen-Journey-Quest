@@ -37,15 +37,13 @@ public:
 
     Inventory() : coinHead(NULL), score(0) {}
 
-void addCoin(int row, int col)
-{
-    CoinNode *newCoin = new CoinNode(row, col);
-    newCoin->next = coinHead;
-    coinHead = newCoin;
-    score += 2; // Each coin adds 2 points
-}
-
-
+    void addCoin(int row, int col)
+    {
+        CoinNode *newCoin = new CoinNode(row, col);
+        newCoin->next = coinHead;
+        coinHead = newCoin;
+        score += 2; // Each coin adds 2 points
+    }
 
     void displayCollectedCoins()
     {
@@ -223,149 +221,145 @@ public:
         return abs(a->row - b->row) + abs(a->col - b->col);
     }
 
-void movePlayer(char direction)
-{
-    if (remainingMoves <= 0)
+    void movePlayer(char direction)
     {
-        gameOver("No moves left! Game over.");
-        return;
-    }
-
-    Node *newPos = NULL;
-    switch (direction)
-    {
-    case 'w': // Up
-        newPos = playerPos->up;
-        break;
-    case 's': // Down
-        newPos = playerPos->down;
-        break;
-    case 'a': // Left
-        newPos = playerPos->left;
-        break;
-    case 'd': // Right
-        newPos = playerPos->right;
-        break;
-    default:
-        return;
-    }
-
-    if (newPos != NULL)
-    {
-        // Check for bomb
-        if (newPos->bomb)
+        if (remainingMoves <= 0)
         {
-            gameOver("You stepped on a bomb! Game over.");
+            gameOver("No moves left! Game over.");
             return;
         }
 
-        // Check if player reached the door
-        if (newPos->door)
+        Node *newPos = NULL;
+        switch (direction)
         {
-            if (inventory.coinHead)  // Check if player has the key
+        case 'w': // Up
+            newPos = playerPos->up;
+            break;
+        case 's': // Down
+            newPos = playerPos->down;
+            break;
+        case 'a': // Left
+            newPos = playerPos->left;
+            break;
+        case 'd': // Right
+            newPos = playerPos->right;
+            break;
+        default:
+            return;
+        }
+
+        if (newPos != NULL)
+        {
+            // Check for bomb
+            if (newPos->bomb)
             {
-                gameOver("Congratulations! You found the door and have the key! You win!");
+                gameOver("You stepped on a bomb! Game over.");
                 return;
+            }
+
+            // Check if player reached the door
+            if (newPos->door)
+            {
+                if (inventory.coinHead) // Check if player has the key
+                {
+                    gameOver("Congratulations! You found the door and have the key! You win!");
+                    return;
+                }
+                else
+                {
+                    mvprintw(2, 0, "You need the key to unlock the door!");
+                    return;
+                }
+            }
+
+            // Auto undo if revisiting the same position
+            if (!moveHistory.isEmpty() && moveHistory.peek() == newPos)
+            {
+                undoMove();
+                return;
+            }
+
+            // Calculate the Manhattan distance from the player's current position to the key
+            int previousDistance = manhattanDistance(playerPos, keyPos);
+
+            // Push current position to history before moving
+            moveHistory.push(playerPos);
+
+            // Move player to new position
+            playerPos->value = '.';
+            playerPos = newPos;
+            playerPos->value = 'P';
+
+            // Check if player collects the key
+            if (playerPos->key)
+            {
+                playerPos->key = false; // Remove the key from the grid
+                mvprintw(2, 0, "You collected the key! Find the door now.");
+                mvprintw(1, 0, "Key status: Obtained"); // Change to display key status
+            }
+
+            // Check for coins
+            if (playerPos->coin)
+            {
+                inventory.addCoin(playerPos->row, playerPos->col);
+                playerPos->coin = false; // Remove the coin after collecting
+                remainingUndos++;        // Increment remaining undos when a coin is collected
+            }
+
+            // Update remaining moves
+            remainingMoves--;
+            mvprintw(0, 0, "Moves left: %d  Undos left: %d  Score: %d", remainingMoves, remainingUndos, inventory.score);
+            refresh();
+
+            // Calculate the new distance after the player moves
+            int currentDistance = manhattanDistance(playerPos, keyPos);
+
+            // Provide hints based on distances
+            if (currentDistance < previousDistance)
+            {
+                mvprintw(1, 0, "Hint: Getting Closer to the key!");
+            }
+            else if (currentDistance > previousDistance)
+            {
+                mvprintw(1, 0, "Hint: You are getting further away from the key.");
             }
             else
             {
-                mvprintw(2, 0, "You need the key to unlock the door!");
-                return;
+                mvprintw(1, 0, "Hint: You are at the same distance from the key.");
             }
+
+            refresh();
+        }
+    }
+
+    void gameOver(const char *message)
+    {
+        clear(); // Clear screen before displaying game over message
+        mvprintw(0, 0, "%s", message);
+        mvprintw(1, 0, "Final Score: %d", inventory.calculateFinalScore(remainingMoves));
+
+        mvprintw(2, 0, "Collected Coins (in order): ");
+        CoinNode *temp = inventory.coinHead;
+        while (temp != NULL)
+        {
+            printw("(%d, %d) ", temp->row, temp->col);
+            temp = temp->next;
         }
 
-        // Auto undo if revisiting the same position
-        if (!moveHistory.isEmpty() && moveHistory.peek() == newPos)
+        if (remainingMoves == 0)
         {
-            undoMove();
-            return;
-        }
-
-        // Calculate the Manhattan distance from the player's current position to the key
-        int previousDistance = manhattanDistance(playerPos, keyPos);
-
-        // Push current position to history before moving
-        moveHistory.push(playerPos);
-
-        // Move player to new position
-        playerPos->value = '.';
-        playerPos = newPos;
-        playerPos->value = 'P';
-
-        // Check if player collects the key
-        if (playerPos->key)
-        {
-            playerPos->key = false;  // Remove the key from the grid
-            mvprintw(2, 0, "You collected the key! Find the door now.");
-            inventory.addCoin(playerPos->row, playerPos->col); // Automatically add coin if player collects the key
-        }
-
-        // Check for coins
-        if (playerPos->coin)
-        {
-            inventory.addCoin(playerPos->row, playerPos->col);
-            playerPos->coin = false;  // Remove the coin after collecting
-            remainingUndos++;         // Increment remaining undos when a coin is collected
-        }
-
-        // Update remaining moves
-        remainingMoves--;
-        mvprintw(0, 0, "Moves left: %d  Undos left: %d  Score: %d", remainingMoves, remainingUndos, inventory.score);
-        refresh();
-
-        // Calculate the new distance after the player moves
-        int currentDistance = manhattanDistance(playerPos, keyPos);
-
-        // Provide hints based on distances
-        if (currentDistance < previousDistance)
-        {
-            mvprintw(1, 0, "Hint: Getting Closer to the key!");
-        }
-        else if (currentDistance > previousDistance)
-        {
-            mvprintw(1, 0, "Hint: You are getting further away from the key.");
+            mvprintw(3, 0, "You ran out of moves. Game over.");
         }
         else
         {
-            mvprintw(1, 0, "Hint: You are at the same distance from the key.");
+            mvprintw(3, 0, "Congratulations on completing the game!");
         }
 
         refresh();
+        getch();  // Wait for user input before exiting
+        endwin(); // End ncurses mode
+        exit(0);
     }
-}
-
-
-
-void gameOver(const char *message)
-{
-    clear(); // Clear screen before displaying game over message
-    mvprintw(0, 0, "%s", message);
-    mvprintw(1, 0, "Final Score: %d", inventory.calculateFinalScore(remainingMoves));
-
-    mvprintw(2, 0, "Collected Coins (in order): ");
-    CoinNode *temp = inventory.coinHead;
-    while (temp != NULL)
-    {
-        printw("(%d, %d) ", temp->row, temp->col);
-        temp = temp->next;
-    }
-
-    if (remainingMoves == 0)
-    {
-        mvprintw(3, 0, "You ran out of moves. Game over.");
-    }
-    else
-    {
-        mvprintw(3, 0, "Congratulations on completing the game!");
-    }
-
-    refresh();
-    getch(); // Wait for user input before exiting
-    endwin(); // End ncurses mode
-    exit(0);
-}
-
-
 
     void undoMove()
     {
@@ -385,57 +379,58 @@ void gameOver(const char *message)
         }
     }
 
-   void displayGrid(int size)
-{
-    Node *rowPtr = head;
-    Node *colPtr;
-
-    clear();
-    mvprintw(0, 0, "Grid: %d x %d", size, size);
-    mvprintw(1, 0, "Mode: %s | Moves left: %d | Undos left: %d | Key status: %s",
-             (size == 10) ? "Easy" : (size == 15) ? "Medium" : "Hard",
-             remainingMoves, remainingUndos, (playerPos->key ? "Obtained" : "Not Obtained"));
-
-    mvprintw(3, 0, "Controls: Use 'W' (up), 'A' (left), 'S' (down), 'D' (right) | 'U' to undo | 'Q' to quit");
-
-    int row = 5; // Start displaying the grid from this row
-
-    // Top boundary
-    mvprintw(row - 1, 0, "# ");
-    for (int i = 0; i < size; i++)
+    void displayGrid(int size)
     {
-        printw("# ");
-    }
-    printw("#");
+        Node *rowPtr = head;
+        Node *colPtr;
 
-    while (rowPtr != NULL)
-    {
-        colPtr = rowPtr;
-        float col = 1;
+        clear();
+        mvprintw(0, 0, "Grid: %d x %d", size, size);
+        mvprintw(1, 0, "Mode: %s | Moves left: %d | Undos left: %d | Key status: %s",
+                 (size == 10) ? "Easy" : (size == 15) ? "Medium"
+                                                      : "Hard",
+                 remainingMoves, remainingUndos, (playerPos->key ? "Obtained" : "Not Obtained"));
 
-        mvprintw(row++, 0, "# ");
-        while (colPtr != NULL)
+        mvprintw(3, 0, "Controls: Use 'W' (up), 'A' (left), 'S' (down), 'D' (right) | 'U' to undo | 'Q' to quit");
+
+        int row = 5; // Start displaying the grid from this row
+
+        // Top boundary
+        mvprintw(row - 1, 0, "# ");
+        for (int i = 0; i < size; i++)
         {
-            mvprintw(row - 1, col, " %c ", colPtr->value); // Space between cells
-            col += 2.14;                                   // spacing
-            colPtr = colPtr->right;
+            printw("# ");
         }
-        mvprintw(row - 1, col, "#"); // Right boundary
-        rowPtr = rowPtr->down;
+        printw("#");
+
+        while (rowPtr != NULL)
+        {
+            colPtr = rowPtr;
+            float col = 1;
+
+            mvprintw(row++, 0, "# ");
+            while (colPtr != NULL)
+            {
+                mvprintw(row - 1, col, " %c ", colPtr->value); // Space between cells
+                col += 2.14;                                   // spacing
+                colPtr = colPtr->right;
+            }
+            mvprintw(row - 1, col, "#"); // Right boundary
+            rowPtr = rowPtr->down;
+        }
+
+        // Bottom boundary
+        mvprintw(row, 0, "# ");
+        for (int i = 0; i < size; i++)
+        {
+            printw("# ");
+        }
+        printw("#");
+
+        mvprintw(row + 2, 0, "Score: %d", inventory.score);
+        mvprintw(row + 3, 0, "Hint: %s", (remainingMoves < inventory.score) ? "Getting Closer" : "Further Away");
+        refresh();
     }
-
-    // Bottom boundary
-    mvprintw(row, 0, "# ");
-    for (int i = 0; i < size; i++)
-    {
-        printw("# ");
-    }
-    printw("#");
-
-    mvprintw(row + 2, 0, "Score: %d", inventory.score);
-    refresh();
-}
-
 };
 
 int main()
@@ -481,23 +476,23 @@ int main()
     gameGrid.displayGrid(size);
 
     char input;
-  
-while (true)
-{
-    input = getch(); // Get user input
-    if (input == 'q')
-        break; // Quit
-    if (input == 'u')
+
+    while (true)
     {
-        gameGrid.undoMove();
+        input = getch(); // Get user input
+        if (input == 'q')
+            break; // Quit
+        if (input == 'u')
+        {
+            gameGrid.undoMove();
+        }
+        else
+        {
+            gameGrid.movePlayer(input);
+        }
+        gameGrid.displayGrid(size);
+        gameGrid.inventory.displayCollectedCoins(); // Display collected coins
     }
-    else
-    {
-        gameGrid.movePlayer(input);
-    }
-    gameGrid.displayGrid(size);
-    gameGrid.inventory.displayCollectedCoins(); // Display collected coins
-}
 
     endwin(); // End curses mode
     return 0;
