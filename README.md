@@ -36,7 +36,8 @@ A 2D maze game which is made using **multidimentional linked lists**.</br> The p
 </br>
 After running the game u will see the following screen: </br>
 Select your desired level by pressing, 1, 2 or 3 and then press Enter.</br>
-![1](https://github.com/user-attachments/assets/efdf2ecf-3f05-4450-9426-4abe9733ddab)
+
+![1](https://github.com/user-attachments/assets/ba9dc0d9-9465-4891-bc30-66bbf4162f3a)
 
 ### During Gameplay
 ![2](https://github.com/user-attachments/assets/10b77aa8-ee47-44f0-8516-bc44b8478304)
