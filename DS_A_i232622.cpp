@@ -259,11 +259,19 @@ void movePlayer(char direction)
             return;
         }
 
-        // Check for door
-        if (newPos->door && inventory.score > 0)
+        // Check if player reached the door
+        if (newPos->door)
         {
-            gameOver("You found the exit with the key! You win!");
-            return;
+            if (inventory.coinHead)  // Check if player has the key
+            {
+                gameOver("Congratulations! You found the door and have the key! You win!");
+                return;
+            }
+            else
+            {
+                mvprintw(2, 0, "You need the key to unlock the door!");
+                return;
+            }
         }
 
         // Auto undo if revisiting the same position
@@ -273,6 +281,9 @@ void movePlayer(char direction)
             return;
         }
 
+        // Calculate the Manhattan distance from the player's current position to the key
+        int previousDistance = manhattanDistance(playerPos, keyPos);
+
         // Push current position to history before moving
         moveHistory.push(playerPos);
 
@@ -280,6 +291,14 @@ void movePlayer(char direction)
         playerPos->value = '.';
         playerPos = newPos;
         playerPos->value = 'P';
+
+        // Check if player collects the key
+        if (playerPos->key)
+        {
+            playerPos->key = false;  // Remove the key from the grid
+            mvprintw(2, 0, "You collected the key! Find the door now.");
+            inventory.addCoin(playerPos->row, playerPos->col); // Automatically add coin if player collects the key
+        }
 
         // Check for coins
         if (playerPos->coin)
@@ -291,24 +310,33 @@ void movePlayer(char direction)
 
         // Update remaining moves
         remainingMoves--;
-        mvprintw(0, 0, "Moves left: %d  Undos left: %d", remainingMoves, remainingUndos);
+        mvprintw(0, 0, "Moves left: %d  Undos left: %d  Score: %d", remainingMoves, remainingUndos, inventory.score);
         refresh();
 
-        // Provide hints based on distances
+        // Calculate the new distance after the player moves
         int currentDistance = manhattanDistance(playerPos, keyPos);
-        if (currentDistance < manhattanDistance(moveHistory.peek(), keyPos))
+
+        // Provide hints based on distances
+        if (currentDistance < previousDistance)
         {
-            mvprintw(1, 0, "Getting Closer!");
+            mvprintw(1, 0, "Hint: Getting Closer to the key!");
+        }
+        else if (currentDistance > previousDistance)
+        {
+            mvprintw(1, 0, "Hint: You are getting further away from the key.");
         }
         else
         {
-            mvprintw(1, 0, "Further away.");
+            mvprintw(1, 0, "Hint: You are at the same distance from the key.");
         }
+
+        refresh();
     }
 }
 
 
-    void gameOver(const char *message)
+
+void gameOver(const char *message)
 {
     clear(); // Clear screen before displaying game over message
     mvprintw(0, 0, "%s", message);
@@ -338,6 +366,7 @@ void movePlayer(char direction)
 }
 
 
+
     void undoMove()
     {
         if (remainingUndos > 0 && !moveHistory.isEmpty())
@@ -356,57 +385,57 @@ void movePlayer(char direction)
         }
     }
 
-    void displayGrid(int size)
+   void displayGrid(int size)
+{
+    Node *rowPtr = head;
+    Node *colPtr;
+
+    clear();
+    mvprintw(0, 0, "Grid: %d x %d", size, size);
+    mvprintw(1, 0, "Mode: %s | Moves left: %d | Undos left: %d | Key status: %s",
+             (size == 10) ? "Easy" : (size == 15) ? "Medium" : "Hard",
+             remainingMoves, remainingUndos, (playerPos->key ? "Obtained" : "Not Obtained"));
+
+    mvprintw(3, 0, "Controls: Use 'W' (up), 'A' (left), 'S' (down), 'D' (right) | 'U' to undo | 'Q' to quit");
+
+    int row = 5; // Start displaying the grid from this row
+
+    // Top boundary
+    mvprintw(row - 1, 0, "# ");
+    for (int i = 0; i < size; i++)
     {
-        Node *rowPtr = head;
-        Node *colPtr;
-
-        clear();
-        mvprintw(0, 0, "Grid: %d x %d", size, size);
-        mvprintw(1, 0, "Mode: %s | Moves left: %d | Undos left: %d | Key status: %s",
-                 (size == 10) ? "Easy" : (size == 15) ? "Medium"
-                                                      : "Hard",
-                 remainingMoves, remainingUndos, (inventory.coinHead ? "Obtained" : "Not Obtained"));
-
-        mvprintw(3, 0, "Controls: Use 'W' (up), 'A' (left), 'S' (down), 'D' (right) | 'U' to undo | 'Q' to quit");
-        mvprintw(4, 0, "Hints: Use your sensing ability to find the key!");
-
-        int row = 6; // Start displaying the grid from this row
-
-        // Top boundary
-        mvprintw(row - 1, 0, "# ");
-        for (int i = 0; i < size; i++)
-        {
-            printw("# ");
-        }
-        printw("#");
-
-        while (rowPtr != NULL)
-        {
-            colPtr = rowPtr;
-            float col = 1;
-
-            mvprintw(row++, 0, "# ");
-            while (colPtr != NULL)
-            {
-                mvprintw(row - 1, col, " %c ", colPtr->value); // Space between cells
-                col += 2.14;                                   // spacing
-                colPtr = colPtr->right;
-            }
-            mvprintw(row - 1, col, "#"); // Right boundary
-            rowPtr = rowPtr->down;
-        }
-
-        // Bottom boundary
-        mvprintw(row, 0, "# ");
-        for (int i = 0; i < size; i++)
-        {
-            printw("# ");
-        }
-        printw("#");
-    mvprintw(row + 2, 0, "Score: %d", inventory.score);
-        refresh();
+        printw("# ");
     }
+    printw("#");
+
+    while (rowPtr != NULL)
+    {
+        colPtr = rowPtr;
+        float col = 1;
+
+        mvprintw(row++, 0, "# ");
+        while (colPtr != NULL)
+        {
+            mvprintw(row - 1, col, " %c ", colPtr->value); // Space between cells
+            col += 2.14;                                   // spacing
+            colPtr = colPtr->right;
+        }
+        mvprintw(row - 1, col, "#"); // Right boundary
+        rowPtr = rowPtr->down;
+    }
+
+    // Bottom boundary
+    mvprintw(row, 0, "# ");
+    for (int i = 0; i < size; i++)
+    {
+        printw("# ");
+    }
+    printw("#");
+
+    mvprintw(row + 2, 0, "Score: %d", inventory.score);
+    refresh();
+}
+
 };
 
 int main()
