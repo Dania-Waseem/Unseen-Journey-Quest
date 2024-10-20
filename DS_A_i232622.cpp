@@ -125,10 +125,16 @@ public:
 
     Grid(int size, int extraMoves, int undos)
     {
-        head = createGrid(size);
+               head = createGrid(size);
         placeObjects(size);
-        remainingMoves = extraMoves; // Total moves
-        remainingUndos = undos;      // Undo count
+
+        // Calculate the number of moves based on Manhattan distance
+        int movesToKey = manhattanDistance(playerPos, keyPos);
+        int movesToDoor = manhattanDistance(keyPos, doorPos);
+        
+        // The remaining moves are now based on the distances plus extra moves
+        remainingMoves = movesToKey + movesToDoor + extraMoves;
+        remainingUndos = undos;     // Undo count
     }
 
 
