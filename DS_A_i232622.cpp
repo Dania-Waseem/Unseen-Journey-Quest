@@ -404,7 +404,7 @@ void movePlayer(char direction)
             printw("# ");
         }
         printw("#");
-
+    mvprintw(row + 2, 0, "Score: %d", inventory.score);
         refresh();
     }
 };
